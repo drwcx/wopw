@@ -36,6 +36,7 @@ has "game_config";
 has "server_config";
 has "db_config";
 has "clients";
+has "games";
 has "logger";
 has "db";
 
@@ -57,6 +58,9 @@ method add_handlers(){
         "chance_wheel"          => "spin_wheel",
         "quick_play"            => "join_game",
         "start_server_connect"  => "prepare_game",
+        "on_ready"              => "set_ready",
+        "not_ready"             => "set_not_ready",
+        "chat"                  => "send_message"
     };
 
     my @handler_files = glob('Server/Packets/*.pm');
@@ -75,6 +79,7 @@ method add_handlers(){
 method start(){
     $self->{clients} = {};
     $self->{crumbs} = {};
+    $self->{games} = {};
     $self->{logger} = Logger->new(origin => "Server");
 
     $self->add_handlers();
@@ -117,6 +122,7 @@ method start(){
                 my $client = $self->get_client_by_sock($s);
                 my $bytes = $client->{stream}->sysread($client->{buffer}, 1024);
                 if($bytes eq 0 || $client->{buffer} eq ""){
+                    $client->disconnect();
                     $self->{logger}->out("Client disconnected", Logger::LEVELS->{inf});
                     $select->remove($client->{stream});
                     close($client->{stream});
@@ -137,11 +143,15 @@ method get_client_by_sock($sock){
             return $_;
         }
     }
-    return undef;
+    return undef;;
 }
 
 method get_load(){
     return (scalar keys %{$self->{clients}});
+}
+
+method get_game_load($id){
+    return (scalar keys %{$self->{games}->{$id}->{players}});
 }
 
 method find_guest_name($name){
@@ -155,6 +165,64 @@ method find_guest_name($name){
     }
     $self->{logger}->out("found guest name " . $name . ($cnt > 0 ? ("_" . $cnt) : ""), Logger::LEVELS->{dbg});
     return $name . ($cnt > 0 ? ("_" . $cnt) : "");
+}
+
+method send_to_game($id, $packet, $ex){
+    foreach(values %{$self->{clients}}){
+        next unless ($_->{connection_type} eq "game");
+        next unless ($_->{guid} eq $id); #or something that makes the player valid
+        next unless ($_->{details}->{id} ne $ex);
+        $_->send($packet);
+    }
+}
+
+method get_player_by_id($id){
+    foreach(values %{$self->{clients}}){
+        next unless ($_->{connection_type} eq "game"); #or something that makes the player valid
+        if($_->{details}->{id} == $id){
+            return $_;
+        }
+    }
+    print "NOT FOUND GETPLAYERID!!\n\n";
+
+    return undef;
+}
+
+#find_game($data->{mapName}, $data->{playerCount}, $data->{gameDuration}, $data->{turnDuration});
+
+method find_game($map_name, $player_count, $game_duration, $turn_duration){
+    #games->{"mapid_cnt_gd_td_cnt"}
+    return "Crash-Landing_4_4_20_0";
+    my $i = 0;
+    $map_name =~s/ /-/g;;
+    my $id = $map_name . "_" . $player_count . "_" . $game_duration . "_" . $turn_duration . "_" . $i;
+    for(;;){
+        if($i >= 100){ last; } #too many games
+        if($self->{games}->{$id} ne undef){
+            my $no = scalar ($self->{games}->{$id}->{players});
+            if(scalar ($self->{games}->{$id}->{players}) < $player_count){
+                return $id;
+            }
+        }else{
+            $self->{games}->{$id}->{players} = [];
+            return $id;
+        }
+        $i++;
+    }
+
+    return "omniscience";
+}
+
+method update_game_player($client){
+    $self->send_to_game($client->{guid}, $client->{details}, -1);
+}
+
+method send_game($guid){
+    my $hr = $self->{games}->{$guid}->{players};
+    my @list_data = map { s/^test(\d+)/part${1}_0/; $_ } values %$hr;
+
+    $self->send_to_game($guid, {"command" => "game", "status" => "idle", "playerCount" => 1, "id" => $guid, "min" => 2, "players" => \@list_data, "map" => "Crash Landing", "name" => "Crash Landing", "cl" => 0,
+    "skip"=> [], "sumOfLevels" => 10, "turnDuration" => 60000, "gameDuration" => 600000, "time" => 1464593355058}, -1);
 }
 
 method check_if_user_online($name){

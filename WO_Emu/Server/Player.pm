@@ -24,6 +24,7 @@ has "buffer";
 has "fileno";
 has "inspiration";
 has "connection_type";
+has "guid";
 
 method ini(){
     my $sck = $self->{stream};
@@ -33,59 +34,83 @@ method ini(){
     };
     $self->{details} = {
         "command" => "",
-        "online" => 2,
+        "online" => 0,
         "time" => 1000,
-        "id" => 101313,
-        "dname" => "Pi",
-        "nw" => -1,
-        "level" => 5,
-        "userWeaponsEquipped" => ["walk","bone","dig","superjump","punch","climb","mortar", "mirv", "goo", "grappling", "teleport", "flamethrower", "heartdynamite", "lasercannon"],
-        "userWeaponsOwned" => {
-          "grenade" => 999,
-          "teleport" => 999,
-          "heartdynamite" => 999,
-          "lasercannon" => 999,
-          "flamethrower" => 999,
-          "goo" => 999,
-          "drill" => 999,
-          "mirv" => 999,
-          "grappling" => 999,
-          "mirvSC1" => 999,
-          "grenadeEL1" => 999,
-          "shuriken" => 999
-        },
-        "ownedPets" => {
-            "1" => {
-                "petid" => 1,
-                "type" => "rabbit",
-                "color1" => "0xfe4500",
-                "color2" => "0xffffff",
-                "accessories" => [],
-                "pers" => "brave",
-                "deaths" => 0,
-                "id" => 1,
-                "gender" => "M",
-                "name" => "Frank Sinatra",
-                "kills" => 0,
-            },
-        },
+        "id" => 0,
+        "dname" => "",
+        "nw" => 0, #-1
+        "level" => 0,
+        "userWeaponsEquipped" => [],
+        "userWeaponsOwned" => {},
+        "ownedPets" => {},
         "userAccessories" => [],
         "accessories" => [],
-        "currentPet" => 1,
+        "currentPet" => 0,
         "login_streak" => -1,
         "playerStatus" => "online",
-        "status" => "ready",
+        "status" => "",
         "net" => "M",
-        "snum" => "ihavethisverynicekey",
-        "xp" => 1000000,
-        "gamecount" => 100,
-        "gold" => 1000,
-        "treats" => 10000,
-        "hp" => 1000,
-        "wins" => 20,
+        "snum" => "",
+        "xp" => 0,
+        "gamecount" => 0,
+        "gold" => 0,
+        "treats" => 0,
+        "hp" => 0,
+        "wins" => 0,
+        "sesscount" => 0,
+        "losses" => 0,
+        "speed" => 0,
+        "attack" => 0,
+        "defence" => 0,
+        "jump" => 0
     };
 
+    $self->{guid} = "";
+    $self->{gsession} = "";
+    $self->{gpos} = -1;
     $self->{connection_type} = "";
+}
+
+method setup($data){
+    $self->{details}->{id} = $data->{id};
+    $self->{details}->{dname} = $data->{usr};
+    $self->{details}->{nw} = $data->{nw};
+    $self->{details}->{level} = $data->{level};
+    $self->{details}->{userAccessories} = $data->{userAccessories};
+    $self->{details}->{accessories} = $data->{accessories};
+    $self->{details}->{currentPet} = $data->{currentPet};
+    $self->{details}->{login_streak} = $data->{login_streak};
+    $self->{details}->{playerStatus} = $data->{playerStatus};
+    $self->{details}->{status} = $data->{status};
+    $self->{details}->{net} = $data->{net};
+    $self->{details}->{snum} = $data->{snum};
+    $self->{details}->{xp} = $data->{xp};
+    $self->{details}->{gamecount} = $data->{gamecount};
+    $self->{details}->{gold} = $data->{gold};
+    $self->{details}->{treats} = $data->{treats};
+    $self->{details}->{hp} = $data->{hp};
+    $self->{details}->{wins} = $data->{wins};
+    $self->{details}->{gold} = $data->{gold};
+    $self->{details}->{sesscount} = $data->{sesscount};
+    $self->{details}->{losses} = $data->{losses};
+    $self->{details}->{speed} = $data->{speed};
+    $self->{details}->{attack} = $data->{attack};
+    $self->{details}->{defence} = $data->{defence};
+    $self->{details}->{jump} = $data->{jump};
+    $self->{details}->{ownedPets} = $data->{ownedPets};
+    $self->{details}->{userWeaponsOwned} = $data->{userWeaponsOwned};
+    $self->{details}->{userWeaponsEquipped} = $data->{userWeaponsEquipped};
+    $self->{details}->{command} = "player";
+
+    $self->{details}->{online} = $self->{parent}->get_load();
+}
+
+method send_player($id){
+    #my $db_data = $self->{parent}->{db}->get_player_by_id($id);
+    #my $client_obj = Player->new(parent => $self->{parent}, logger => $self->{logger});
+    #$client_obj->setup($db_data);
+    my $client_obj = $self->{parent}->get_player_by_id($id);
+    $self->send($client_obj->{details});
 }
 
 method handle(){
@@ -120,6 +145,15 @@ method handle(){
             try{
                 my $post_path = (split " ", $msg)[1];
                 $self->{connection_type} = (split "/", (split /[?]/, $post_path)[0])[2];
+
+                if($self->{connection_type} eq "game"){
+                    my @game_tokens = (split "&", ((split /[?]/, $post_path)[1]));
+                    $self->{guid} = (split "=", $game_tokens[0])[1];
+                    $self->{gsession} = (split "=", $game_tokens[1])[1];
+
+                    #print "guid is " . ($self->{guid}) . "\n\n";
+                }
+
                 #my $ctype = (split "?", $path)[0];
                 #print "connection type is " . $ctype . "\n";
                 print "PATH: " . $post_path, "\n";
@@ -245,6 +279,18 @@ method notify(){
     $self->send($msg);
 }
 
+method update_player(){
+    $self->{details}->{command} = "player";
+    $self->send($self->{details});
+}
+
+method send_fake_player($id, $name){
+    my $container = $self->{details};
+    $container->{dname} = $name;
+    $container->{id} = $id;
+    $self->send($container);
+}
+
 ### GETS ###
 
 method get_code(){
@@ -288,12 +334,11 @@ method send($packet){
         $output = $self->{inspiration} . $output;
         $self->write($output);
         $self->{logger}->out("Added inspiration", Logger::LEVELS->{inf});
-        print $output . " <--- output\n";
+        $self->{logger}->out("Output " . $output, Logger::LEVELS->{inf});
         $self->{loader_information}->{posted_header} = 2;
         return;
     }
     # 6
-    print $output . " <--- output\n";
     $self->write($length);
     $self->write($output);
     $self->{logger}->out("Sent unencrypted " . $output, Logger::LEVELS->{inf});
@@ -306,6 +351,18 @@ method write($msg){
 
 method disconnect(){
     $self->{logger}->out("Disconnecting", Logger::LEVELS->{dbg});
+
+    if($self->{connection_type} eq "game"){
+        #remove from games
+        if($self->{guid} ne ""){
+            #$self->{parent}->remove_player_from_game($self->{guid});
+            delete($self->{parent}->{games}->{$self->{guid}}->{players}->{$self->{details}->{id}});
+            my $hr = $self->{parent}->{games}->{$self->{guid}}->{players};
+            my @list_data = map { s/^test(\d+)/part${1}_0/; $_ } values %$hr;
+            my $msg = {"command" => "game", "status" => "idle", "playerCount" => 1, "id" => $self->{guid}, "min" => 2, "players" => \@list_data, "map" => "Crash Landing", "name" => "Crash Landing", "cl" => 0, "skip"=> [], "sumOfLevels" => 10, "turnDuration" => 60000, "gameDuration" => 600000, "time" => 1464593355058};
+            $self->{parent}->send_to_game($self->{guid}, $msg, $self->{details}->{id});
+        }
+    }
 }
 
 1;

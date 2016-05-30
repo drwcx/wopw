@@ -29,4 +29,18 @@ method set_name($data, $client){
     #$client->notify();
 }
 
+method set_ready($data, $client){
+    $client->{details}->{status} = "ready";
+    $client->{parent}->{games}->{$client->{guid}}->{players}->{$client->{details}->{id}}->{status} = "ready";
+    $client->{parent}->update_game_player($client);
+    $client->{parent}->send_game($client->{guid});
+}
+
+method set_not_ready($data, $client){
+    $client->{details}->{status} = "-1";
+    $client->{parent}->{games}->{$client->{guid}}->{players}->{$client->{details}->{id}}->{status} = "-1";
+    $client->{parent}->update_game_player($client);
+    $client->{parent}->send_game($client->{guid});
+}
+
 1;
