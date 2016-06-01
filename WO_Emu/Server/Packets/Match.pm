@@ -49,6 +49,44 @@ method prepare_game($data, $client){
     $client->{parent}->send_game($client->{guid});
 }
 
+method load_game($data, $client){
+    #$client->{parent}->send_to_game($client->{guid}, {"command" => "request_synch"}, 0);
+    my @avatars = ();
+    my @player_list = ();
+    #$client->{parent}->{games}->{$client->{guid}}->{players}
+    my $hr = $client->{parent}->{games}->{$client->{guid}}->{players};
+    my @list_data = map { s/^test(\d+)/part${1}_0/; $_ } values %$hr;
+
+    foreach my $pl (@list_data){
+        my $p = $client->{parent}->get_player_by_id($pl->{guid});
+        push @avatars, $p->construct_player_profile();
+        push @player_list, $p->{details};
+    }
+
+    $client->{parent}->send_to_game($client->{guid},
+        {
+            "command" => "set_synch",
+            "gameRecord" => {
+                "randomSeed" => "abc",
+                "connected" => 1,
+                "currentPlayer" => 1,
+                "tick" => 0,
+                "playerlist" => \@player_list
+            },
+            "gameMode" => "multiPlayerMode",
+            "avatarList" => \@avatars,
+            "timeLoop" =>{},
+            "gameDuration" => 60,
+            "turnDuration" => 10,
+            "lightningDelay" => 10,
+            "field" => {"explosions"},
+            "waterLevel" => 0,
+            "crateDispensation" => [],
+            "playOrder" => 1,
+            "randomSeed" => "abc"
+        }, 0);
+}
+
 method send_message($data, $client){
     $client->{parent}->send_to_game($client->{guid}, $data, $client->{details}->{id});
 }

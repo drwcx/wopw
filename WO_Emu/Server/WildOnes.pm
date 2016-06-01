@@ -60,7 +60,8 @@ method add_handlers(){
         "start_server_connect"  => "prepare_game",
         "on_ready"              => "set_ready",
         "not_ready"             => "set_not_ready",
-        "chat"                  => "send_message"
+        "chat"                  => "send_message",
+        "map_loaded"            => "load_game"
     };
 
     my @handler_files = glob('Server/Packets/*.pm');
@@ -132,7 +133,22 @@ method start(){
                 }
             };
         }
-        select(undef, undef, undef, 0.05);
+        select(undef, undef, undef, 0.02);
+        #start games
+        foreach my $gkey (keys %{$self->{games}}) {
+            if($self->{games}->{$gkey}->{start_time} != -1 && time() gt $self->{games}->{$gkey}->{start_time} && $self->{games}->{$gkey}->{started} == 0){
+                $self->{games}->{$gkey}->{started} = 1;
+                print "Started game with st" . $self->{games}->{$gkey}->{start_time} . "!\n";
+                $self->send_to_game($gkey, {"command" => "game_join_confirmed"}, 0);
+            }
+        }
+        #foreach(values %{$self->{games}}){
+        #    if($_->{start_time} != -1 && time() gt $_->{start_time} && $_->{started} == 0){
+        #        $_->{started} = 1;
+        #        print "Started game with st" . $_->{start_time} . "!\n";
+        #        $self->send_to_game($client->{guid}, {"command" => "game_join_confirmed"}, 0);
+        #    }
+        #}
     }
 }
 
@@ -192,6 +208,9 @@ method get_player_by_id($id){
 
 method find_game($map_name, $player_count, $game_duration, $turn_duration){
     #games->{"mapid_cnt_gd_td_cnt"}
+    $self->{games}->{"Crash-Landing_4_4_20_0"}->{status} = "idle";
+    $self->{games}->{"Crash-Landing_4_4_20_0"}->{start_time} = -1;
+
     return "Crash-Landing_4_4_20_0";
     my $i = 0;
     $map_name =~s/ /-/g;;
@@ -221,8 +240,12 @@ method send_game($guid){
     my $hr = $self->{games}->{$guid}->{players};
     my @list_data = map { s/^test(\d+)/part${1}_0/; $_ } values %$hr;
 
-    $self->send_to_game($guid, {"command" => "game", "status" => "idle", "playerCount" => 1, "id" => $guid, "min" => 2, "players" => \@list_data, "map" => "Crash Landing", "name" => "Crash Landing", "cl" => 0,
+    $self->send_to_game($guid, {"command" => "game", "status" => $self->{games}->{$guid}->{status}, "playerCount" => 1, "id" => $guid, "min" => 2, "players" => \@list_data, "map" => "Crash Landing", "name" => "Crash Landing", "cl" => 0,
     "skip"=> [], "sumOfLevels" => 10, "turnDuration" => 60000, "gameDuration" => 600000, "time" => 1464593355058}, -1);
+}
+
+method check_if_game_ready($guid){
+    return 1;
 }
 
 method check_if_user_online($name){

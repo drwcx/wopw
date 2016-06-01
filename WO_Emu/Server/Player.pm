@@ -47,7 +47,7 @@ method ini(){
         "accessories" => [],
         "currentPet" => 0,
         "login_streak" => -1,
-        "playerStatus" => "online",
+        "playerStatus" => "playing",
         "status" => "",
         "net" => "M",
         "snum" => "",
@@ -65,10 +65,55 @@ method ini(){
         "jump" => 0
     };
 
+    $self->{avatar} = {
+        "color" => "0xffffff",
+        "currentTurn" => "false",
+        "startFireTick" => 0,
+        "gunFirePower" => 0,
+        "isFacingRight" => "true",
+        "isWalkingLeft" => "false",
+        "isWalkingRight" => "false",
+        "waitingForJump" => "false",
+        "jumpDirection" => "",
+        "waitingForJumpTick" => 0,
+        "underwater" => "false",
+        "climbing" => "false",
+        "digging" => "false",
+        "angle" => "0",
+        "superJumpTick" => 0,
+        "gooTick" => 0,
+        "moveGrappling" => 0,
+        "durability" => [],
+    };
     $self->{guid} = "";
     $self->{gsession} = "";
     $self->{gpos} = -1;
     $self->{connection_type} = "";
+}
+
+
+method construct_player_profile(){
+    {
+        "player"            => $self->{details}->{id},
+        "color"             => $self->{avatar}->{color},
+        "ownedPet"          => $self->{details}->{ownedPets}->{$self->{details}->{currentPet}},
+        "currentTurn"       => $self->{avatar}->{currentTurn},
+        "startFireTick"     => $self->{avatar}->{startFireTick},
+        "gunFirePower"      => $self->{avatar}->{gunFirePower},
+        "isFacingRight"     => $self->{avatar}->{isFacingRight},
+        "isWalkingLeft"     => $self->{avatar}->{isWalkingLeft},
+        "isWalkingRight"    => $self->{avatar}->{isWalkingRight},
+        "waitingForJump"    => $self->{avatar}->{waitingForJump},
+        "jumpDirection"     => $self->{avatar}->{jumpDirection},
+        "waitingForJumpTick"=> $self->{avatar}->{waitingForJumpTick},
+        "underwater"        => $self->{avatar}->{underwater},
+        "climbing"          => $self->{avatar}->{climbing},
+        "digging"           => $self->{avatar}->{digging},
+        "angle"             => $self->{avatar}->{angle},
+        "superJumpTick"     => $self->{avatar}->{superJumpTick},
+        "gooTick"           => $self->{avatar}->{gooTick},
+        "moveGrappling"     => $self->{avatar}->{moveGrappling}
+    };
 }
 
 method setup($data){
@@ -100,6 +145,7 @@ method setup($data){
     $self->{details}->{ownedPets} = $data->{ownedPets};
     $self->{details}->{userWeaponsOwned} = $data->{userWeaponsOwned};
     $self->{details}->{userWeaponsEquipped} = $data->{userWeaponsEquipped};
+    $self->{details}->{durability} = $data->{durability};
     $self->{details}->{command} = "player";
 
     $self->{details}->{online} = $self->{parent}->get_load();
