@@ -9,7 +9,39 @@ use Server::Plugin::Logger;
 use Server::Plugin::Strings;
 use Server::Plugin::Packer;
 
+use List::Util qw(any);
+
 use Data::Dumper;
+
+
+method set_outfit($data, $client){
+    #check if every element of the load is within the userAccessories container
+    my @load = @{$client->{details}->{userAccessories}};
+    my @accessories = @{$client->{details}->{userAccessories}};
+
+    my $ok = 1;
+
+    foreach my $el_a (@load) {
+        $ok = 0;
+        foreach my $el_b (@accessories){
+            if($el_a eq $el_b){
+                $ok = 1;
+                last;
+            }
+        }
+
+        if($ok eq 0){
+            last;
+        }
+    }
+
+    if($ok != 0){
+        $client->{details}->{ownedPets}->{$client->{details}->{currentPet}}->{accessories} = $data->{load};
+        $client->update();
+    }else{
+        print "\x1b[33m" . {$client->{details}->{dname}} . " is feeling 1337 today.\x1b[00m\n";
+    }
+}
 
 method set_flag($data, $client){
     print "Setting flags\n";
@@ -29,6 +61,11 @@ method set_name($data, $client){
     #$client->notify();
 }
 
+method change_pet($data, $client){
+    $client->{details}->{currentPet} = $data->{name};
+    $client->update();
+}
+
 method set_ready($data, $client){
     $client->{details}->{status} = "ready";
     $client->{parent}->{games}->{$client->{guid}}->{players}->{$client->{details}->{id}}->{status} = "ready";
@@ -43,12 +80,6 @@ method set_ready($data, $client){
     }
 
     $client->{parent}->send_game($client->{guid});
-
-    #my $hr = $client->{parent}->{games}->{$client->{guid}}->{players};
-    #my @list_data = map { s/^test(\d+)/part${1}_0/; $_ } values %$hr;
-
-    #$client->{parent}->send_to_game($client->{guid}, {"command" => "startGame", "currentPlayer" => $client->{details}->{id}, "tick" => 10,
-    # "playerList" => \@list_data, "connected" => 1, "randomSeed" => 12345} ,-1);
 }
 
 method set_not_ready($data, $client){

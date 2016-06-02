@@ -14,7 +14,7 @@ use Data::Dumper;
 method set_weapons($data, $client){
     print "Setting weapons\n";
     $client->{details}->{userWeaponsEquipped} = $data->{value};
-    $client->send($client->{details});
+    $client->update();
 }
 
 1;

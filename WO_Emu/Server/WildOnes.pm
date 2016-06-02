@@ -61,7 +61,12 @@ method add_handlers(){
         "on_ready"              => "set_ready",
         "not_ready"             => "set_not_ready",
         "chat"                  => "send_message",
-        "map_loaded"            => "load_game"
+        "map_loaded"            => "load_game",
+        "change_pet"            => "change_pet",
+        "buy_accessory"         => "buy_accessory",
+        "set_acc_load"          => "set_outfit",
+        "buy_pet"               => "buy_pet",
+        "buy_ammo"              => "buy_weapon"
     };
 
     my @handler_files = glob('Server/Packets/*.pm');
@@ -74,7 +79,7 @@ method add_handlers(){
     }
 
     my $crumbs_no = scalar(keys %{$self->{crumbs}});
-    $self->{logger}->out("Loaded " . $crumbs_no . " handler" . ($crumbs_no > 1 ? "s" : ""), Logger::LEVELS->{inf});
+    $self->{logger}->out("Loaded " . $crumbs_no . " packet type" . ($crumbs_no > 1 ? "s" : ""), Logger::LEVELS->{inf});
 }
 
 method start(){
@@ -143,7 +148,7 @@ method start(){
             }
         }
         #foreach(values %{$self->{games}}){
-        #    if($_->{start_time} != -1 && time() gt $_->{start_time} && $_->{started} == 0){
+        #    if($_->{start_userAccessoriestime} != -1 && time() gt $_->{start_time} && $_->{started} == 0){
         #        $_->{started} = 1;
         #        print "Started game with st" . $_->{start_time} . "!\n";
         #        $self->send_to_game($client->{guid}, {"command" => "game_join_confirmed"}, 0);

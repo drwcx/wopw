@@ -44,7 +44,6 @@ method ini(){
         "userWeaponsOwned" => {},
         "ownedPets" => {},
         "userAccessories" => [],
-        "accessories" => [],
         "currentPet" => 0,
         "login_streak" => -1,
         "playerStatus" => "playing",
@@ -151,10 +150,7 @@ method setup($data){
     $self->{details}->{online} = $self->{parent}->get_load();
 }
 
-method send_player($id){
-    #my $db_data = $self->{parent}->{db}->get_player_by_id($id);
-    #my $client_obj = Player->new(parent => $self->{parent}, logger => $self->{logger});
-    #$client_obj->setup($db_data);
+method send_player($id){ #send client details about another client
     my $client_obj = $self->{parent}->get_player_by_id($id);
     $self->send($client_obj->{details});
 }
@@ -325,9 +321,38 @@ method notify(){
     $self->send($msg);
 }
 
-method update_player(){
-    $self->{details}->{command} = "player";
+method update(){
     $self->send($self->{details});
+}
+
+method charge_treats($amount){
+    $self->{details}->{treats} -= $amount;
+    $self->update();
+}
+
+method charge_gold($amount){
+    $self->{details}->{gold} -= $amount;
+    $self->update();
+}
+
+method update_treats($amount){
+    $self->{details}->{treats} = $amount;
+    $self->update();
+}
+
+method update_gold($amount){
+    $self->{details}->{treats} = $amount;
+    $self->update();
+}
+
+method add_weapon($type, $amount){
+    if($self->{details}->{userWeaponsOwned}->{$type}){
+        $self->{details}->{userWeaponsOwned}->{$type} += $amount;
+    }else{
+        $self->{details}->{userWeaponsOwned}->{$type} = $amount;
+    }
+
+    $self->update();
 }
 
 method send_fake_player($id, $name){
