@@ -1,11 +1,7 @@
-# wopw
+# wopw (old Perl version)
 
 § Description
 
-The project is a remake of the Wild Ones game. The project is run for educational purposes. All the media and front-end elements belong to their original creators.
+I wrote a Perl-flavored emulator prior to the Node one because I deemed it necessary to pick up a new language at the time. This project is no longer being maintained and has only been uploaded for reference.
 
-§ Features
-
-- Authentication through the client's flashvars
-- Basic client-server communication
-
+It is not a full-fledged emulator and is only compatible with the 2011 client.
